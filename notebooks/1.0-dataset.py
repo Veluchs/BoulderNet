@@ -15,5 +15,24 @@
 # ---
 
 # %%
+import os
+import numpy as np
+import torch
 
 
+# %%
+class ClimbingHoldDataset(torch.utils.data.Dataset):
+
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
+
+        # load image files, and labels
+        self.imgs = list(sorted(os.path.join(root_dir, "images/")))
+        self.masks = list(sorted(os.path.join(root_dir, "labels/")))
+
+    def __len__(self):
+        return len(self.imgs)
+    
+
+
+# %%
