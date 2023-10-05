@@ -33,7 +33,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.imgs)
-    
+
     def __getitem__(self, idx):
         # load image and mask
         img_path = os.path.join(self.root_dir, "images/", self.imgs[idx])
@@ -90,12 +90,12 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         image = Image.open(img_path)
         width, height = image.size
-     
+
         masks = []
         class_labels = []
 
         for line in lines:
-            class_label = int(line[1])  # TODO what about multiple digits
+            class_label = int(line[0])  # TODO what about multiple digits
             polygon = np.fromstring(line[2:], sep=' ')
             polygon_coordinates = [
                 (int(polygon[2*i] * width), int(polygon[2*i + 1] * height))
