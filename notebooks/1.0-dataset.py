@@ -33,6 +33,37 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.imgs)
+    
+        
+    def __getitem__(self, idx):
+        # load image and mask
+        img_path = os.path.join(self.root_dir, "images/", self.imgs[idx])
+        labels_path = os.path.join(self.root_dir, "labels/", self.labels[idx])
+
+        img = Image.open(img_path).convert("RGB")
+
+        masks = self.labels_to_masks(labels_path, img_path)
+        num_instances = len(masks)
+        boxes = []
+        for mask in masks:
+            boxes.append(get_bounding_box(mask))
+
+
+        return 
+    
+    
+    def get_bounding_box(self, mask):
+        """This function computes the bounding box of a given mask"""
+
+        nonzero_indices = np.nonzero(mask)
+
+        xmin = np.min(nonzero_indices[1])
+        xmax = np.max(nonzero_indices[1])
+        ymin = np.max(nonzero_indices[0])
+        ymax = np.max(nonzero_indices[0])
+
+        return [xmin, ymin, xmax, ymax]
+
 
  
     def labels_to_masks(self, label_path, img_path) -> np.array():
@@ -66,4 +97,3 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                 })
 
         return masks
-# %%
