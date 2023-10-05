@@ -49,13 +49,12 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         # convert everything to Tensors
 
-        boxes = torch.as_tensor(boxes, dtype=torch.float32)
-        class_labels = torch.as_tensor(class_labels, dtype=torch.int64)
-        masks = torch.as_tensor(masks, dtype=torch.uint8)
+        boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
+        class_labels = torch.as_tensor(np.array(class_labels), dtype=torch.int64)
+        masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
         image_id = torch.tensor([idx])
-        area = torch.tensor(
-            (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
-            )
+        area = ((boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])).detach().clone()
+            
         iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
 
         # return as target dictionary
@@ -116,4 +115,6 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 ds = ClimbingHoldDataset('../data/')
 
 # %%
-ds.__getitem__(0)
+ds.__len__()
+
+# %%
