@@ -86,7 +86,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         """This function computes masks from given polygon labels."""
 
         label = open(label_path)
-        lines = label.readLines()
+        lines = label.readlines()
 
         image = Image.open(img_path)
         width, height = image.size
