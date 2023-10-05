@@ -16,9 +16,9 @@
 
 # %%
 import os
-import numpy as np
 import torch
 from PIL import Image, ImageDraw
+import numpy as np
 
 
 # %%
@@ -34,32 +34,36 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.imgs)
 
-    def polygon_to_mask(self, label_path, img_path) -> np.array():
+ 
+    def labels_to_masks(self, label_path, img_path) -> np.array():
+        """This function computes masks from given polygon labels."""
+
         label = open(label_path)
         lines = label.readLines()
 
         image = Image.open(img_path)
         width, height = image.size
+       
+        masks = []
 
-        # create empty mask with size of original image
-        mask_template = np.zeros([width, height])
-
-        mask = Image.new('RGB', mask_template.shape, 0)
-        mask_draw = ImageDraw.Draw(mask)
-
-        for i, line in enumerate(lines, 1):
+        for line in lines:
+            class_label = int(line[1]) #TODO what about multiple digits
             polygon = np.fromstring(line[2:], sep=' ')
             polygon_coordinates = [
                 int(polygon[2*i] * width), int(polygon[2*i + 1] * height)
                 for i in range(int(len(polygon)/2))
                 ]
-            mask_draw.polygon(polygon_coordinates, 
-                              outline=(i, 0, 0), 
-                              fill=(i, 0, 0)
-                             )
-            # TODO add overflow for more than 256 holds
+            # create empty image with size of image
+            mask = Image.new('L', (width, height), 0)
+            # draw mask on image
+            ImageDraw.Draw(mask).polygon(polygon_coordinates,
+                                         outline=1,
+                                         fill=1,
+                                        )
+            masks.append({
+                'mask': np.array(mask),
+                'class': class_label
+                })
 
-        return np.array(mask)
-
-
+        return masks
 # %%
