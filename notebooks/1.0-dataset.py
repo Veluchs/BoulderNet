@@ -82,7 +82,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         return [xmin, ymin, xmax, ymax]
 
-    def labels_to_masks(self, label_path, img_path) -> np.array():
+    def labels_to_masks(self, label_path, img_path) -> np.array:
         """This function computes masks from given polygon labels."""
 
         label = open(label_path)
@@ -112,4 +112,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             class_labels.append(class_label)
 
         return masks, class_labels
+# %%
+ds = ClimbingHoldDataset('../data/')
+
 # %%
