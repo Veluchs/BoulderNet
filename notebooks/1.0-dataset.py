@@ -34,7 +34,6 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.imgs)
     
-        
     def __getitem__(self, idx):
         # load image and mask
         img_path = os.path.join(self.root_dir, "images/", self.imgs[idx])
@@ -46,7 +45,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         num_instances = len(masks)
         boxes = []
         for mask in masks:
-            boxes.append(get_bounding_box(mask))
+            boxes.append(self.get_bounding_box(mask))
 
         # convert everything to Tensors
 
@@ -70,8 +69,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         target["iscrowd"] = iscrowd
 
         return img, target
-    
-    
+
     def get_bounding_box(self, mask):
         """This function computes the bounding box of a given mask"""
 
@@ -84,8 +82,6 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         return [xmin, ymin, xmax, ymax]
 
-
- 
     def labels_to_masks(self, label_path, img_path) -> np.array():
         """This function computes masks from given polygon labels."""
 
@@ -94,15 +90,15 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         image = Image.open(img_path)
         width, height = image.size
-       
+     
         masks = []
         class_labels = []
 
         for line in lines:
-            class_label = int(line[1]) #TODO what about multiple digits
+            class_label = int(line[1])  # TODO what about multiple digits
             polygon = np.fromstring(line[2:], sep=' ')
             polygon_coordinates = [
-                int(polygon[2*i] * width), int(polygon[2*i + 1] * height)
+                (int(polygon[2*i] * width), int(polygon[2*i + 1] * height))
                 for i in range(int(len(polygon)/2))
                 ]
             # create empty image with size of image
@@ -116,3 +112,4 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             class_labels.append(class_label)
 
         return masks, class_labels
+# %%
