@@ -28,8 +28,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         self.root_dir = root_dir
 
         # load image files, and labels
-        self.imgs = list(sorted(os.path.join(root_dir, "images/")))
-        self.labels = list(sorted(os.path.join(root_dir, "labels/")))
+        self.imgs = list(sorted(os.listdir(os.path.join(root_dir, "images/"))))
+        self.labels = list(sorted(os.listdir(os.path.join(root_dir, "labels/"))))
 
     def __len__(self):
         return len(self.imgs)
@@ -116,3 +116,4 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 ds = ClimbingHoldDataset('../data/')
 
 # %%
+ds.__getitem__(0)
