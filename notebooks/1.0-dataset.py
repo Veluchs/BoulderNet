@@ -48,6 +48,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         for mask in masks:
             boxes.append(get_bounding_box(mask))
 
+        
 
         return 
     
