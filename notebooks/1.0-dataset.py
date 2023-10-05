@@ -48,7 +48,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         for mask in masks:
             boxes.append(get_bounding_box(mask))
 
-        
+
 
         return 
     
@@ -77,6 +77,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         width, height = image.size
        
         masks = []
+        class_labels = []
 
         for line in lines:
             class_label = int(line[1]) #TODO what about multiple digits
@@ -92,9 +93,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                                          outline=1,
                                          fill=1,
                                         )
-            masks.append({
-                'mask': np.array(mask),
-                'class': class_label
-                })
+            masks.append(np.array(mask))
+            class_labels.append(class_label)
 
-        return masks
+        return masks, class_labels
