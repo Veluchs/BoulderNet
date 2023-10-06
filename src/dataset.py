@@ -98,8 +98,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             # draw mask on image
             ImageDraw.Draw(mask).polygon(polygon_coordinates,
                                          outline=1,
-                                         fill=1,
-                                        )
+                                         fill=1
+                                         )
             masks.append(np.array(mask))
             class_labels.append(class_label)
 
