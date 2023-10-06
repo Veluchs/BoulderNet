@@ -19,6 +19,7 @@ import os
 import torch
 from PIL import Image, ImageDraw
 import numpy as np
+import torchvision.transforms as T
 
 
 # %%
@@ -54,7 +55,9 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
         image_id = torch.tensor([idx])
         area = ((boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])).detach().clone()
-            
+        
+        img = T.functional.pil_to_tensor(img)
+
         iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
 
         # return as target dictionary
@@ -76,7 +79,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         xmin = np.min(nonzero_indices[1])
         xmax = np.max(nonzero_indices[1])
-        ymin = np.max(nonzero_indices[0])
+        ymin = np.min(nonzero_indices[0])
         ymax = np.max(nonzero_indices[0])
 
         return [xmin, ymin, xmax, ymax]
@@ -111,10 +114,44 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             class_labels.append(class_label)
 
         return masks, class_labels
+
+
+# %% [markdown]
+# ## Visualization Tools
+
+# %%
+def show(sample):
+    import matplotlib.pyplot as plt
+    
+    from torchvision.transforms import functional as F
+    from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
+
+    image, target = sample
+        
+    image = F.convert_image_dtype(image, torch.uint8)
+    masks = target['masks']
+    masks = masks.to(torch.bool)
+    annotated_image = draw_bounding_boxes(image, target["boxes"], colors="yellow", width=3)
+    #annotated_image = draw_segmentation_masks(image, masks)
+
+    
+    fig, ax = plt.subplots()
+    ax.imshow(annotated_image.permute(1, 2, 0).numpy())
+    ax.set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
+    fig.tight_layout()
+
+    fig.show()
+
 # %%
 ds = ClimbingHoldDataset('../data/')
 
 # %%
-ds.__len__()
+show(ds[2])
+
+# %%
+a = ds[2]
+
+# %%
+a
 
 # %%
