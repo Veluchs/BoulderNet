@@ -17,7 +17,7 @@
 # %%
 import os
 import torch
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 import numpy as np
 import torchvision.transforms as T
 
@@ -41,8 +41,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         labels_path = os.path.join(self.root_dir, "labels/", self.labels[idx])
 
         img = Image.open(img_path).convert("RGB")
-
-        masks, class_labels = self.labels_to_masks(labels_path, img_path)
+        img = ImageOps.exif_transpose(img)
+        masks, class_labels = self.labels_to_masks(labels_path, img)
         num_instances = len(masks)
         boxes = []
         for mask in masks:
@@ -84,13 +84,11 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         return [xmin, ymin, xmax, ymax]
 
-    def labels_to_masks(self, label_path, img_path) -> np.array:
+    def labels_to_masks(self, label_path, image) -> np.array:
         """This function computes masks from given polygon labels."""
 
         label = open(label_path)
         lines = label.readlines()
-
-        image = Image.open(img_path)
         width, height = image.size
 
         masks = []
@@ -120,11 +118,11 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 # ## Visualization Tools
 
 # %%
-def show(sample, bbox = True, seg_mask = True):
+def show(sample, bbox = True, seg_mask = False):
     import matplotlib.pyplot as plt
     
     from torchvision.transforms import functional as F
-    from torchvision.utils import draw_bounding_boxes
+    from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 
     image, target = sample
         
@@ -138,7 +136,6 @@ def show(sample, bbox = True, seg_mask = True):
     colors = [class_to_color[key] for key in labels]
     masks = target['masks']
     masks = masks.to(torch.bool)
-    print(masks.shape)
     if bbox == True:
         annotated_image = draw_bounding_boxes(
             image,
@@ -147,9 +144,15 @@ def show(sample, bbox = True, seg_mask = True):
             width=3,
         )
     if seg_mask == True: 
-        annotated_image = draw_seg_mask(
+
+
+        ordered_labels, ordered_masks = list(zip(*sorted(zip(labels, masks), key= lambda x: x[0], reverse=True)))
+        colors = [class_to_color[key] for key in ordered_labels]
+
+        ordered_masks = torch.stack(list(ordered_masks), dim=0)
+        annotated_image = draw_segmentation_masks(
             image,
-            masks=masks,
+            masks=ordered_masks,
             colors=colors,
             # alpha=0.1
         )
@@ -163,16 +166,13 @@ def show(sample, bbox = True, seg_mask = True):
     fig.show()
 
 # %%
-show(a, bbox=False)
-
-# %%
 ds = ClimbingHoldDataset('../data/')
 
 # %%
-a = ds[2]
+a = ds[0]
 
 # %%
-a[1]['masks'][-1:159]
+show(a, bbox=False, seg_mask=True)
 
 # %%
 import collections
@@ -247,7 +247,9 @@ def draw_seg_mask(
     img_to_draw = image.detach().clone()
     # TODO: There might be a way to vectorize this
     for mask, color in zip(masks, colors):
-        img_to_draw[:, mask] = (img_to_draw[:, mask] * 0.3 + color[:, None] * 0.7).to(torch.uint8)
+        img_to_draw[:, mask] = (
+            img_to_draw[:, mask] * 0.3 + color[:, None] * 0.7
+            ).to(torch.uint8)
 
     out = img_to_draw
     return out.to(out_dtype)
@@ -296,8 +298,6 @@ def _parse_colors(
     return [ImageColor.getrgb(color) if isinstance(color, str) else color for color in colors]
 
 
-
 # %%
-show(a, bbox=False)
 
 # %%
