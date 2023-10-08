@@ -7,7 +7,7 @@ import torchvision.transforms as T
 
 class ClimbingHoldDataset(torch.utils.data.Dataset):
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, transforms):
         self.root_dir = root_dir
 
         # load image files, and labels
@@ -17,6 +17,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         self.labels = list(sorted(
             os.listdir(os.path.join(root_dir, "labels/"))
             ))
+    
+        self.transforms = transforms
 
     def __len__(self):
         return len(self.imgs)
@@ -61,6 +63,9 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         target["image_id"] = image_id
         target["area"] = area
         target["iscrowd"] = iscrowd
+
+        if self.transforms is not None:
+            img, target = self.transforms(img, target)
 
         return img, target
 
