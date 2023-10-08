@@ -6,14 +6,12 @@ import torchvision.transforms as T
 from torchvision.transforms import v2
 
 
-IMAGE_RES = 1024
-
-
 class ClimbingHoldDataset(torch.utils.data.Dataset):
+
+    IMAGE_RES = 1024
 
     def __init__(self, root_dir, transforms):
         self.root_dir = root_dir
-
         # load image files, and labels
         self.imgs = list(sorted(
             os.listdir(os.path.join(root_dir, "images/"))
@@ -35,7 +33,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         img = Image.open(img_path).convert("RGB")
         img = ImageOps.exif_transpose(img)
 
-        v2.functional.resize(IMAGE_RES)
+        img = v2.functional.resize(img, size=ClimbingHoldDataset.IMAGE_RES)
 
         masks, class_labels = self.labels_to_masks(labels_path, img)
         num_instances = len(masks)
