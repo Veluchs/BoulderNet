@@ -124,17 +124,17 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         return patches, targets
 
-    def get_bounding_box(self, mask):
+    def get_bounding_box(mask):
         """This function computes the bounding box of a given mask"""
 
-        nonzero_indices = np.nonzero(mask)
+        nonzero_indices = torch.nonzero(mask, as_tuple=True)
 
-        xmin = np.min(nonzero_indices[1])
-        xmax = np.max(nonzero_indices[1])
-        ymin = np.min(nonzero_indices[0])
-        ymax = np.max(nonzero_indices[0])
+        xmin = torch.min(nonzero_indices[1])
+        xmax = torch.max(nonzero_indices[1])
+        ymin = torch.min(nonzero_indices[0])
+        ymax = torch.max(nonzero_indices[0])
 
-        return [xmin, ymin, xmax, ymax]
+        return torch.tensor((xmin, ymin, xmax, ymax))
 
     def labels_to_masks(self, label_path, image) -> np.array:
         """This function computes masks from given polygon labels."""
