@@ -4,6 +4,8 @@ from PIL import Image, ImageDraw, ImageOps
 import numpy as np
 import torchvision.transforms as T
 from torchvision.transforms import v2
+from torchvision import tv_tensors
+import torchvision
 
 
 class ClimbingHoldDataset(torch.utils.data.Dataset):
@@ -26,6 +28,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         return len(self.imgs)
 
     def __getitem__(self, idx):
+        '''images are resized and split into 4 parts'''
+
         # load image and mask
         img_path = os.path.join(self.root_dir, "images/", self.imgs[idx])
         labels_path = os.path.join(self.root_dir, "labels/", self.labels[idx])
@@ -37,25 +41,32 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         masks, class_labels = self.labels_to_masks(labels_path, img)
         num_instances = len(masks)
-        boxes = []
-        for mask in masks:
-            boxes.append(self.get_bounding_box(mask))
 
-        # convert everything to Tensors
+        # split image and masks in 12 patches parts
 
-        boxes = torch.as_tensor(np.array(boxes), dtype=torch.float32)
+        image_patches, target_patches = self.split(img, masks, class_labels)
+
+        # for patch in target_patches:
+        #     boxes = []
+        #     for mask in patch['masks']:
+        #         boxes.append(self.get_bounding_box(mask))
+        #     patch['boxes'] = boxes
+
+        # convert everything to TV_tensors
+
+        boxes = tv_tensors.BoundingBoxes(np.array(boxes), dtype=torch.float32)
         class_labels = torch.as_tensor(
             np.array(class_labels),
             dtype=torch.int64
             )
-        masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
+        masks = tv_tensors.Mask(np.array(masks), dtype=torch.uint8)
         image_id = torch.tensor([idx])
         area = (
             (boxes[:, 3] - boxes[:, 1]) *
             (boxes[:, 2] - boxes[:, 0])
             ).detach().clone()
 
-        img = T.functional.pil_to_tensor(img)
+        img = tv_tensors.Image(img)
 
         iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
 
@@ -73,6 +84,45 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             img, target = self.transforms(img, target)
 
         return img, target
+
+    def split(self, img, masks, labels):
+        '''Splits the img and masks in patches of size KERNEL_SIZE.
+
+        Image patches are returned with their corresponding masks (if nonempty)
+        and their labels.
+        '''
+        KERNEL_SIZE = 256
+        STRIDE = 256
+        img = torchvision.transforms.functional.pil_to_tensor(img)
+        patches = img.unfold(1, KERNEL_SIZE, STRIDE).unfold(2, KERNEL_SIZE, STRIDE)
+        patches = patches.reshape(3, -1, KERNEL_SIZE, KERNEL_SIZE)
+        patches = patches.permute(1, 0, 2, 3)
+
+        masks = torch.Tensor(np.array(masks))
+        mask_patched = masks.unfold(1, KERNEL_SIZE, STRIDE).unfold(2,
+                                                                   KERNEL_SIZE,
+                                                                   STRIDE)
+        mask_patched = mask_patched.reshape(masks.shape[0], -1,
+                                            KERNEL_SIZE, KERNEL_SIZE)
+
+        targets = []
+
+        for patch_index, image_patch in enumerate(patches):
+            patch_masks = []
+            patch_labels = []
+            for index, mask in enumerate(mask_patched):
+
+                if mask[patch_index].any() is True:
+                    patch_masks.append(mask[patch_index])
+                    patch_labels.append(labels[index])
+
+            patch_target = {
+                'masks': patch_masks,
+                'labels': patch_labels
+            }
+            targets.append(patch_target)
+
+        return patches, targets
 
     def get_bounding_box(self, mask):
         """This function computes the bounding box of a given mask"""
