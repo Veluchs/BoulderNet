@@ -1,0 +1,23 @@
+{
+    "name": "BoulderNet",
+
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."},
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter",
+                "congyiwu.vscode-jupytext"
+            ],
+            "settings": {
+                // This is the venv path set in the Dockerfile
+                "python.defaultInterpreterPath": "/opt/venv/bin/python",
+                "files.autoSave": "afterDelay"
+            }
+        }
+    },
+
+    "remoteUser": "vscode"
+}
