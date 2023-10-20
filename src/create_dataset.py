@@ -16,7 +16,7 @@ def split(img, masks, labels):
 
     KERNEL_SIZE = 256
     STRIDE = 256
-    
+
     img = torchvision.transforms.functional.pil_to_tensor(img)
     patches = img.unfold(1, KERNEL_SIZE, STRIDE).unfold(2, KERNEL_SIZE, STRIDE)
     patches = patches.reshape(3, -1, KERNEL_SIZE, KERNEL_SIZE)
@@ -51,8 +51,8 @@ def split(img, masks, labels):
 
 
 IMAGE_RES = 768
-IMAGE_PATH = '../data/data-masks/img'
-MASK_PATH = '../data/data-masks/masks_instances'
+IMAGE_PATH = 'data/data-masks/img'
+MASK_PATH = 'data/data-masks/masks_instances'
 
 image_list = os.listdir(IMAGE_PATH)
 
@@ -89,4 +89,4 @@ for image_file_name in image_list:
             'masks': targets[i]['masks'],
             'labels': targets[i]['labels']
         }
-        torch.save(datapoint, f'data/{image_file_name[:-4]}-{i}.pt')
+        torch.save(datapoint, f'data/processed/{image_file_name[:-4]}-{i}.pt')
