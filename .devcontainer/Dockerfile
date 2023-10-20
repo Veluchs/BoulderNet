@@ -45,7 +45,7 @@ USER vscode
 COPY requirements.txt /tmp/pip-tmp/
 RUN pip3 --disable-pip-version-check --no-cache-dir install -r /tmp/pip-tmp/requirements.txt
 
-RUN pip3 install torch==2.1.0+cpu torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install torch==2.1.0+cpu torchaudio==2.1.0+cpu torchvision==0.16.0+cpu --index-url https://download.pytorch.org/whl/cpu
 
 # set vi as git default editor
 
