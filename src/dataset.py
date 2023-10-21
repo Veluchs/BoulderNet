@@ -50,8 +50,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                 area = torch.cat([area[0:i], area[i+1:]])
                 boxes = torch.cat([boxes[0:i], boxes[i+1:]])
                 labels = torch.cat([labels[0:i], labels[i+1:]])
-        
-        
+
         target['boxes'] = tv_tensors.BoundingBoxes(
                             boxes,
                             format=tv_tensors.BoundingBoxFormat.XYXY,
@@ -64,10 +63,10 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         target['iscrowd'] = iscrowd
         target['labels'] = labels
 
-        image = datapoint['image']
+        image = datapoint['image'].float()
 
         # if self.transforms is not None:
-        #     image_patches, target_patches = self.transforms(datapoint['image'], target_patches)
+        #     image, target = self.transforms(image, target)
 
         return image, target
 
