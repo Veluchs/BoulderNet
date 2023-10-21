@@ -31,11 +31,12 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         datapoint = torch.load(data_path)
 
         labels = datapoint['labels']
+        masks = datapoint['masks']
         # split image and masks in 12 patches parts
 
         target = {}
         boxes = []
-        for mask in datapoint['masks']:
+        for mask in masks:
             boxes.append(self.get_bounding_box(mask))
         boxes = torch.stack(boxes)
 
@@ -50,6 +51,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                 area = torch.cat([area[0:i], area[i+1:]])
                 boxes = torch.cat([boxes[0:i], boxes[i+1:]])
                 labels = torch.cat([labels[0:i], labels[i+1:]])
+                masks = torch.cat([masks[0:i], masks[i+1:]])
 
         target['boxes'] = tv_tensors.BoundingBoxes(
                             boxes,
@@ -57,7 +59,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                             canvas_size=(256, 256))
         target['area'] = area
         target['image_id'] = torch.tensor([idx])
-        target['masks'] = datapoint['masks']
+        target['masks'] = masks
         num_instances = len(target['masks'])
         iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
         target['iscrowd'] = iscrowd
