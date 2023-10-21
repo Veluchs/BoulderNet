@@ -45,13 +45,13 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             (boxes[:, 2] - boxes[:, 0])
             ).detach().clone()
         
+
         # remove empty bounding boxes
-        for i, ar in enumerate(area):
-            if ar == 0: 
-                area = torch.cat([area[0:i], area[i+1:]])
-                boxes = torch.cat([boxes[0:i], boxes[i+1:]])
-                labels = torch.cat([labels[0:i], labels[i+1:]])
-                masks = torch.cat([masks[0:i], masks[i+1:]])
+
+        boxes = boxes[area!=0]
+        labels = labels[area!=0]
+        masks = masks[area!=0]
+        area = area[area!=0]
 
         target['boxes'] = tv_tensors.BoundingBoxes(
                             boxes,
