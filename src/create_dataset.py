@@ -71,11 +71,11 @@ for image_file_name in image_list:
         mask = v2.functional.resize(mask, size=IMAGE_RES)
         masks.append(mask)
         if 'hold' in mask_filename:
-            labels.append(0)
-        if 'volume' in mask_filename:
             labels.append(1)
-        if 'wall' in mask_filename:
+        if 'volume' in mask_filename:
             labels.append(2)
+        if 'wall' in mask_filename:
+            labels.append(3)
 
     masks = torch.squeeze(torch.stack(masks))
 
