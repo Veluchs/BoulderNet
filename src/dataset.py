@@ -59,7 +59,10 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
                             canvas_size=(256, 256))
         target['area'] = area
         target['image_id'] = torch.tensor([idx])
-        target['masks'] = masks
+        target['masks'] = tv_tensors.Mask(
+                            masks,
+                            dtype=torch.bool
+        )
         num_instances = len(target['masks'])
         iscrowd = torch.zeros((num_instances,), dtype=torch.int64)
         target['iscrowd'] = iscrowd
