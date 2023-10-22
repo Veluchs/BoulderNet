@@ -141,6 +141,8 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     epoch_loss = 0
     for i, batch in enumerate(data_loader):
         images, targets = batch
+        images = list(image.to(device) for image in images)
+        targets = [{k: v.to(device) if isinstance(v, torch.Tensor) else v for k, v in t.items()} for t in targets]
 
         loss_dict = model(images, targets)
         losses = sum(loss for loss in loss_dict.values())
@@ -167,12 +169,16 @@ import sys
 sys.path.insert(1, '../src/')
 import utils
 from dataset import ClimbingHoldDataset
+
+
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
 trafo = MobileNet_V3_Large_Weights.IMAGENET1K_V2.transforms()
 
 # train on the GPU or on the CPU, if a GPU is not available
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model = get_model_instance_segmentation(3)
-
+model.to(device)
 # use our dataset and defined transformations
 dataset = ClimbingHoldDataset('../data/processed/', trafo)
 dataset_test = ClimbingHoldDataset('../data/processed/', trafo)
