@@ -12,6 +12,16 @@ def split(img, masks, labels):
 
     Image patches are returned with their corresponding masks (if nonempty)
     and their labels.
+
+    Args:
+        img: a PIL image.
+        masks: a tensor containing all masks for img.
+        labels: 
+
+    Returns: 
+        A tesnor containing the img cut into patches as well as the target list
+        containing a dictioniary containing masks and labels for each patch.  
+
     '''
 
     KERNEL_SIZE = 256
