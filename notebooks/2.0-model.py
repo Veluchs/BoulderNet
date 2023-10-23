@@ -71,9 +71,6 @@ def get_model_instance_segmentation(num_classes):
 
 
 # %%
-model = get_model_instance_segmentation(3)
-
-# %%
 from torchvision import tv_tensors
 import sys
 
@@ -84,11 +81,21 @@ import torch
 from torchvision.models import MobileNet_V3_Large_Weights
 
 # %%
-trafo = MobileNet_V3_Large_Weights.IMAGENET1K_V2.transforms()
+from torchvision.transforms import v2
+
+transforms = v2.Compose([
+    v2.ToDtype(torch.uint8, scale=False),
+    v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3),
+    v2.RandomRotation(180),
+    v2.ToDtype(torch.float),
+    v2.Normalize([0], [255]),
+    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
 
 # %%
 
-dataset = ClimbingHoldDataset('../data/processed/', transforms=trafo)
+dataset = ClimbingHoldDataset('../data/processed/', transforms=None)
 data_loader = torch.utils.data.DataLoader(
     dataset, batch_size=1, shuffle=False, num_workers=1,
 )
@@ -99,32 +106,7 @@ data_loader = torch.utils.data.DataLoader(
 img = dataset.__getitem__(9)[0]
 target = dataset.__getitem__(9)[1]
 
-target['labels']
-
-# %%
-from utils import show
-
-show([img.to(torch.uint8), target], seg_mask=True)
-
-# %%
-import utils
-
-dataset = ClimbingHoldDataset('../data/processed/', trafo)
-data_loader = torch.utils.data.DataLoader(
-    dataset, batch_size=1, shuffle=False, num_workers=1, collate_fn=utils.collate_fn
-)
-
-# %%
-test = next(iter(data_loader))
-
-# %%
-img, target = test
-
-# %%
-target[0]['boxes']
-
-# %%
-model([img], [target])
+img.dtype
 
 # %%
 import math
@@ -170,23 +152,29 @@ sys.path.insert(1, '../src/')
 import utils
 from dataset import ClimbingHoldDataset
 
+from torchvision.transforms import v2
+
+transforms = v2.Compose([
+    v2.ToDtype(torch.uint8, scale=False),
+    v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3),
+    v2.RandomRotation(180),
+    v2.ToDtype(torch.float),
+    v2.Normalize([0], [255]),
+    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+])
+
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-trafo = MobileNet_V3_Large_Weights.IMAGENET1K_V2.transforms()
 
 # train on the GPU or on the CPU, if a GPU is not available
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model = get_model_instance_segmentation(3)
 model.to(device)
 # use our dataset and defined transformations
-dataset = ClimbingHoldDataset('../data/processed/', trafo)
-dataset_test = ClimbingHoldDataset('../data/processed/', trafo)
-
+dataset = ClimbingHoldDataset('../data/processed/', transforms)
 
 indices = range(len(dataset))
 dataset = torch.utils.data.Subset(dataset, indices[:])
-
 
 
 data_loader = torch.utils.data.DataLoader(

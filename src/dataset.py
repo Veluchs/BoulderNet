@@ -70,8 +70,8 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
 
         image = datapoint['image'].float()
 
-        # if self.transforms is not None:
-        #     image, target = self.transforms(image, target)
+        if self.transforms is not None:
+            image, target['boxes'], target['masks'] = self.transforms(image, target['boxes'], target['masks'])
 
         return image, target
 
