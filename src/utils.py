@@ -1,7 +1,4 @@
-
-
 import torch
-
 
 
 def collate_fn(batch):
@@ -34,9 +31,9 @@ def show(sample, bbox = True, seg_mask = False):
     image = F.convert_image_dtype(image, torch.uint8)
     labels = target['labels'].tolist()
     class_to_color = {
-        1: 'green',
-        2: 'violet',
-        3: 'yellow'
+        0: 'green',
+        1: 'violet',
+        2: 'yellow'
     }
     colors = [class_to_color[key] for key in labels]
     masks = target['masks']
