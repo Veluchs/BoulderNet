@@ -3,85 +3,30 @@
 #   jupytext:
 #     cell_metadata_filter: -all
 #     custom_cell_magics: kql
-#     formats: ipynb,py
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# +
-import torchvision
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
-from torchvision.models.detection.mask_rcnn import maskrcnn_resnet50_fpn
-from torchvision.models.detection.rpn import AnchorGenerator
-from torchvision.models.detection import MaskRCNN
-
-
-def get_model_instance_segmentation(num_classes):
-    # load an instance segmentation model pre-trained on COCO
-    backbone = torchvision.models.mobilenet_v3_large(weights="DEFAULT").features
-    # ``FasterRCNN`` needs to know the number of
-    # output channels in a backbone. For mobilenet_v2, it's 1280
-    # so we need to add it here
-    backbone.out_channels = 960
-
-    # let's make the RPN generate 5 x 3 anchors per spatial
-    # location, with 5 different sizes and 3 different aspect
-    # ratios. We have a Tuple[Tuple[int]] because each feature
-    # map could potentially have different sizes and
-    # aspect ratios
-    anchor_generator = AnchorGenerator(
-        sizes=((32, 64, 128, 256, 512),),
-        aspect_ratios=((0.5, 1.0, 2.0),)
-    )
-
-    # let's define what are the feature maps that we will
-    # use to perform the region of interest cropping, as well as
-    # the size of the crop after rescaling.
-    # if your backbone returns a Tensor, featmap_names is expected to
-    # be [0]. More generally, the backbone should return an
-    # ``OrderedDict[Tensor]``, and in ``featmap_names`` you can choose which
-    # feature maps to use.
-
-    roi_pooler = torchvision.ops.MultiScaleRoIAlign(
-        featmap_names=['0'],
-        output_size=7,
-        sampling_ratio=2,
-    )
-
-    # put the pieces together inside a Faster-RCNN model
-
-    mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'],
-                                                                output_size=14,
-                                                                sampling_ratio=2)
-
-    model = MaskRCNN(backbone,
-                            num_classes=num_classes,
-                            rpn_anchor_generator=anchor_generator,
-                            box_roi_pool=roi_pooler,
-                            mask_roi_pool=mask_roi_pooler)
-
-    return model
-
-
-# +
+# %%
 from torchvision import tv_tensors
 import sys
 
 sys.path.insert(1, '../src/')
 from torchvision import tv_tensors
 from dataset import ClimbingHoldDataset
+from model import get_model_instance_segmentation
 import torch
 from torchvision.models import MobileNet_V3_Large_Weights
 
-# +
+# %%
 from torchvision.transforms import v2
 
 transforms = v2.Compose([
@@ -94,7 +39,7 @@ transforms = v2.Compose([
 ])
 
 
-# +
+# %%
 
 dataset = ClimbingHoldDataset('../data/processed/', transforms=None)
 data_loader = torch.utils.data.DataLoader(
@@ -103,13 +48,13 @@ data_loader = torch.utils.data.DataLoader(
 
 
 
-# +
+# %%
 img = dataset.__getitem__(9)[0]
 target = dataset.__getitem__(9)[1]
 
 img.dtype
 
-# +
+# %%
 import math
 import sys
 import time
@@ -143,8 +88,27 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     epoch_loss /= i+1
     return epoch_loss
 
-# +
+
+# %%
+def get_transform(train):
+    transforms = []
+    transforms.append(v2.ToDtype(torch.uint8, scale=False))
+    transforms.append(v2.ToDtype(torch.float32, scale=True))
+                      
+    if train:
+        transforms.append(v2.RandomHorizontalFlip(p=0.5))
+        transforms.append(v2.RandomVerticalFlip(p=0.5))
+        transforms.append(v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3))
+                      
+    transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
+
+    return v2.Compose(transforms)
+
+
+# %%
 import torch
+from model import get_model_instance_segmentation
+
 
 # some_file.py
 import sys
@@ -156,21 +120,6 @@ from dataset import ClimbingHoldDataset
 from torchvision.transforms import v2
 
 
-def get_transform(train):
-    transforms = []
-    transforms.append(v2.ToDtype(torch.uint8, scale=False)
-    transforms.append(v2.ToDtype(torch.float32, scale=True)
-                      
-    if train:
-        transforms.append(v2.RandomHorizontalFlip(p=0.5))
-        transforms.append(v2.RandomVerticalFlip(p=0.5))
-        transforms.appen(v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3))
-                      
-    transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
-
-    return v2.Compose(transforms)
-
-
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 # train on the GPU or on the CPU, if a GPU is not available
@@ -178,8 +127,8 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 model = get_model_instance_segmentation(3)
 model.to(device)
 # use our dataset and defined transformations
-dataset = ClimbingHoldDataset('/datasets/holds/', get_transforms(train=True)
-dataset_test = ClimbingHoldDataset('/datasets/holds/', get_transforms(train=False)
+dataset = ClimbingHoldDataset('../data/processed', get_transform(train=True))
+dataset_test = ClimbingHoldDataset('../data/processed', get_transform(train=False))
 
 
 
@@ -229,7 +178,7 @@ for epoch in range(num_epochs):
 
 # print("That's it!")
 
-# +
+# %%
 from torchvision.transforms import v2
 sys.path.insert(1, '../src/')
 import utils
@@ -252,22 +201,23 @@ dataset = ClimbingHoldDataset('/datasets/holds/', inf_transforms)
 img, target = dataset.__getitem__(1)
 
 
-# +
+# %%
 # img, target = transforms(img, target)
 
 utils.show([v2.functional.to_dtype(img, torch.uint8, scale=True), target])
 
-# +
+# %%
 
 model.eval()
 pred = model([img.to(device)])
-# -
 
+# %%
 img
 
+# %%
 pred[0]['masks'] = torch.squeeze(pred[0]['masks'])
 
-# +
+# %%
 from utils import show
 
 show([img.to('cpu'), pred[0]], seg_mask=False)
