@@ -27,42 +27,7 @@ import torch
 from torchvision.models import MobileNet_V3_Large_Weights
 
 # %%
-from torchvision.transforms import v2
-
-transforms = v2.Compose([
-    v2.ToDtype(torch.uint8, scale=False),
-    v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3),
-    v2.RandomRotation(180),
-    v2.ToDtype(torch.float),
-    v2.Normalize([0], [255]),
-    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-
-# %%
-
-dataset = ClimbingHoldDataset('../data/processed/', transforms=None)
-data_loader = torch.utils.data.DataLoader(
-    dataset, batch_size=1, shuffle=False, num_workers=1,
-)
-
-
-
-# %%
-img = dataset.__getitem__(9)[0]
-target = dataset.__getitem__(9)[1]
-
-img.dtype
-
-# %%
-import math
-import sys
-import time
 import torch
-
-import torchvision.models.detection.mask_rcnn
-
-import utils
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     model.train()
@@ -75,49 +40,42 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
         loss_dict = model(images, targets)
         losses = sum(loss for loss in loss_dict.values())
         
-
-        # reduce losses over all GPUs for logging purposes
-
         optimizer.zero_grad()
         losses.backward()
         optimizer.step()
-        # print(i)
-        if lr_scheduler is not None:
-            lr_scheduler.step()
         epoch_loss += losses
     epoch_loss /= i+1
     return epoch_loss
 
 
 # %%
+import torchvision.transforms.v2 as T
+
 def get_transform(train):
     transforms = []
-    transforms.append(v2.ToDtype(torch.uint8, scale=False))
-    transforms.append(v2.ToDtype(torch.float32, scale=True))
+    transforms.append(T.ToDtype(torch.uint8, scale=False))
+    transforms.append(T.ToDtype(torch.float32, scale=True))
                       
     if train:
-        transforms.append(v2.RandomHorizontalFlip(p=0.5))
-        transforms.append(v2.RandomVerticalFlip(p=0.5))
-        transforms.append(v2.ColorJitter(brightness=0.3, contrast=0.1, saturation=0.4, hue=0.3))
+        transforms.append(T.RandomHorizontalFlip(p=0.5))
+        transforms.append(T.RandomVerticalFlip(p=0.5))
+        transforms.append(T.ColorJitter(brightness=0.3, contrast=0.1, 
+                                        saturation=0.4, hue=0.3))
                       
-    transforms.append(v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
+    transforms.append(T.Normalize(mean=[0.485, 0.456, 0.406], 
+                                  std=[0.229, 0.224, 0.225]))
 
-    return v2.Compose(transforms)
+    return T.Compose(transforms)
 
 
 # %%
+import sys
+sys.path.insert(1, '../src/')
 import torch
 from model import get_model_instance_segmentation
-
-
-# some_file.py
-import sys
-# caution: path[0] is reserved for script path (or '' in REPL)
-sys.path.insert(1, '../src/')
 import utils
+from engine import evaluate
 from dataset import ClimbingHoldDataset
-
-from torchvision.transforms import v2
 
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -133,8 +91,8 @@ dataset_test = ClimbingHoldDataset('../data/processed', get_transform(train=Fals
 
 
 indices = torch.randperm(len(dataset)).tolist()
-dataset = torch.utils.data.Subset(dataset, indices[:])
-dataset_test = torch.utils.data.Subset(dataset_test, indices[-5:])
+dataset = torch.utils.data.Subset(dataset, indices[:5])
+dataset_test = torch.utils.data.Subset(dataset_test, indices[-1:])
 
 # define training and validation data loaders
 data_loader = torch.utils.data.DataLoader(
@@ -145,13 +103,13 @@ data_loader = torch.utils.data.DataLoader(
     collate_fn=utils.collate_fn
 )
 
-# data_loader_test = torch.utils.data.DataLoader(
-#     dataset_test,
-#     batch_size=1,
-#     shuffle=False,
-#     num_workers=4,
-#     collate_fn=utils.collate_fn
-
+data_loader_test = torch.utils.data.DataLoader(
+    dataset_test,
+    batch_size=1,
+    shuffle=False,
+    num_workers=1,
+    collate_fn=utils.collate_fn
+)
 
 # move model to the right device
 model.to(device)
@@ -175,8 +133,50 @@ for epoch in range(num_epochs):
     # update the learning rate
     lr_scheduler.step()
     # evaluate on the test dataset
-
+    res = evaluate(model, data_loader_test, device)
+    print(f'Epoch {epoch}: mAP = {res}')
 # print("That's it!")
+
+# %%
+# test evaluation
+
+import sys
+sys.path.insert(1, '../src/')
+import torch
+from model import get_model_instance_segmentation
+import utils
+from engine import evaluate
+from dataset import ClimbingHoldDataset
+
+
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+# train on the GPU or on the CPU, if a GPU is not available
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+model = get_model_instance_segmentation(3)
+model.to(device)
+# use our dataset and defined transformations
+dataset_test = ClimbingHoldDataset('../data/processed', get_transform(train=False))
+
+
+dataset_test = torch.utils.data.Subset(dataset_test, [0, 1])
+
+
+data_loader_test = torch.utils.data.DataLoader(
+    dataset_test,
+    batch_size=1,
+    shuffle=False,
+    num_workers=1,
+    collate_fn=utils.collate_fn
+)
+
+# move model to the right device
+model.to(device)
+
+# %%
+print(device)
+
+evaluate(model, data_loader_test, device)
 
 # %%
 from torchvision.transforms import v2
