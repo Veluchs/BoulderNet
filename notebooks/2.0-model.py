@@ -22,7 +22,7 @@ import sys
 sys.path.insert(1, '../src/')
 from torchvision import tv_tensors
 from dataset import ClimbingHoldDataset
-from model import get_model_instance_segmentation
+from model import get_model_instance_segmentation_resnet
 import torch
 from torchvision.models import MobileNet_V3_Large_Weights
 
@@ -72,6 +72,13 @@ def get_transform(train):
 
 
 # +
+model = get_model_instance_segmentation_resnet(2)
+
+for param in model.named_parameters():
+        print(param[0])
+
+
+# +
 import sys
 sys.path.insert(1, '../src/')
 import torch
@@ -85,7 +92,19 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 # train on the GPU or on the CPU, if a GPU is not available
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model = get_model_instance_segmentation(2)
+model = get_model_instance_segmentation_resnet(2)
+
+# freeze backbone layers
+# for param in model.parameters():
+#     param.requires_grad = False
+# #  Unfreeze  the roi_heads
+# for param in model.roi_heads.parameters():
+#     param.requires_grad = True
+# #  Unfreeze region proposal generator 
+# for param in model.rpn.parameters():
+#      param.requires_grad = True
+
+
 model.to(device)
 # use our dataset and defined transformations
 dataset = ClimbingHoldDataset('/datasets/holds', get_transform(train=True))
@@ -95,12 +114,12 @@ dataset_test = ClimbingHoldDataset('/datasets/holds', get_transform(train=False)
 
 indices = torch.randperm(len(dataset)).tolist()
 dataset = torch.utils.data.Subset(dataset, indices[:5])
-dataset_test = torch.utils.data.Subset(dataset_test, indices[-1:])
+dataset_test = torch.utils.data.Subset(dataset_test, indices[-5:])
 
 # define training and validation data loaders
 data_loader = torch.utils.data.DataLoader(
     dataset,
-    batch_size=32,
+    batch_size=64,
     shuffle=True,
     num_workers=1,
     collate_fn=utils.collate_fn
@@ -119,11 +138,11 @@ model.to(device)
 
 # construct an optimizer
 params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(params, lr=0.005,
+optimizer = torch.optim.SGD(params, lr=0.001,
                             momentum=0.9, weight_decay=0.0005)
 # and a learning rate scheduler
 lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
-                                               step_size=3,
+                                               step_size=200,
                                                gamma=0.1)
 
 # let's train it for 10 epochs
@@ -134,55 +153,17 @@ for epoch in range(num_epochs):
     loss = train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=1)
     # update the learning rate
     # evaluate on the test dataset
-    if (epoch % 100 == 0):
+    if (epoch % 10 == 0):
         res = evaluate(model, data_loader_test, device)
-        print(f'Epoch {epoch}: mAP = {res}')
+        res_train = evaluate(model, data_loader, device)
+
+        print(f'Epoch {epoch}: \n mAP = {res}')
         print(f'Training Loss: {loss}')
+        print(f'Training mAP = {res_train}')
+        print('\n')
         
-    if (epoch % 500 == 0):       
-        lr_scheduler.step()
+    lr_scheduler.step()
 # print("That's it!")
-
-# +
-# test evaluation
-
-import sys
-sys.path.insert(1, '../src/')
-import torch
-from model import get_model_instance_segmentation
-import utils
-from engine import evaluate
-from dataset import ClimbingHoldDataset
-
-
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
-# train on the GPU or on the CPU, if a GPU is not available
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-model = get_model_instance_segmentation(3)
-model.to(device)
-# use our dataset and defined transformations
-dataset_test = ClimbingHoldDataset('../datasets/holds', get_transform(train=False))
-
-
-dataset_test = torch.utils.data.Subset(dataset_test, [0, 1])
-
-
-data_loader_test = torch.utils.data.DataLoader(
-    dataset_test,
-    batch_size=1,
-    shuffle=False,
-    num_workers=1,
-    collate_fn=utils.collate_fn
-)
-
-# move model to the right device
-model.to(device)
-
-# +
-print(device)
-
-evaluate(model, data_loader_test, device)
 
 # +
 from torchvision.transforms import v2
@@ -190,21 +171,10 @@ sys.path.insert(1, '../src/')
 import utils
 
 
-
-
-inf_transforms = v2.Compose([
-    v2.ToDtype(torch.uint8, scale=False),
-    v2.ToDtype(torch.float32, scale=True),
-    v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-])
-
-
-
-
 dataset = ClimbingHoldDataset('/datasets/holds', transforms=get_transform(False))
 
 
-img, target = dataset.__getitem__(1)
+img, target = dataset.__getitem__(24)
 
 
 # +
@@ -225,8 +195,7 @@ pred[0]['masks'] = torch.squeeze(pred[0]['masks'])
 # +
 from utils import show
 
-show([img.to('cpu'), pred[0]], seg_mask=True)
+show([img.to('cpu'), pred[0]], seg_mask=False)
 # -
 
-dataset = ClimbingHoldDataset('/datasets/holds', get_transform(train=True))
-dataset.train_labels 
+pred
