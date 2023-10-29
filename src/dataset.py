@@ -52,6 +52,15 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         labels = labels[area!=0]
         masks = masks[area!=0]
         area = area[area!=0]
+        
+        #remove labels == 2 (boulderwall)
+        
+        boxes = boxes[labels!=2]
+        masks = masks[labels!=2]
+        area = area[labels!=2]
+        labels = labels[labels!=2]
+
+
 
         target['boxes'] = tv_tensors.BoundingBoxes(
                             boxes,
@@ -71,7 +80,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         image = datapoint['image'].float()
 
         if self.transforms is not None:
-            image, target['boxes'], target['masks'] = self.transforms(image, target['boxes'], target['masks'])
+            image, target = self.transforms(image, target)
 
         return image, target
 
