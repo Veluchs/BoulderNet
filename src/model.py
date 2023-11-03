@@ -4,6 +4,7 @@ from torchvision.models.detection import MaskRCNN
 from torchvision.ops import MultiScaleRoIAlign
 
 
+
 def get_model_instance_segmentation(num_classes):
     # load an instance segmentation model pre-trained on COCO
     backbone = mobilenet_v3_large(weights="DEFAULT").features
