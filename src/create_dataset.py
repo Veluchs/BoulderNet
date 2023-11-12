@@ -60,8 +60,8 @@ def split(img, masks, labels):
 
 
 IMAGE_RES = 768
-IMAGE_PATH = '../data/raw/img'
-MASK_PATH = '../data/raw/masks_instances'
+IMAGE_PATH = '/workspaces/BoulderNet/data/raw/img'
+MASK_PATH = '/workspaces/BoulderNet/data/raw/masks'
 
 image_list = os.listdir(IMAGE_PATH)
 
@@ -99,4 +99,4 @@ for image_file_name in image_list:
             'masks': targets[i]['masks'],
             'labels': targets[i]['labels']
         }
-        torch.save(datapoint, f'data/processed/{image_file_name[:-4]}-{i}.pt')
+        torch.save(datapoint, f'/workspaces/BoulderNet/data/processed/{image_file_name[:-4]}-{i}.pt')
