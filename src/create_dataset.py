@@ -6,6 +6,16 @@ from torchvision.transforms import v2
 from torchvision import tv_tensors
 import torchvision
 
+from pycocotools.coco import COCO
+
+from pycocotools import mask as coco_mask
+
+def uncompressed_rle_to_mask(segm):
+    # TODO: use own implementation instead of encoding - decoding
+    compressed_rle = coco_mask.frPyObjects(segm['segmentation'], segm['segmentation']['size'][0], segm['segmentation']['size'][1])
+    decoded_value = coco_mask.decode(compressed_rle)
+    return decoded_value
+
 def split(img, masks, labels):
     '''Splits the img and masks in patches of size KERNEL_SIZE.
 
@@ -60,33 +70,32 @@ def split(img, masks, labels):
 
 
 IMAGE_RES = 768
-IMAGE_PATH = '/workspaces/BoulderNet/data/raw/img'
-MASK_PATH = '/workspaces/BoulderNet/data/raw/masks'
+IMAGE_PATH = '/workspaces/BoulderNet/data/coco/innsbruck/images'
+ANNOTATION_PATH = '/workspaces/BoulderNet/data/coco/innsbruck/annotations/instances.json'
 
-image_list = os.listdir(IMAGE_PATH)
+coco = COCO(ANNOTATION_PATH)
 
-for image_file_name in image_list:
+img_id_list = coco.getImgIds()
+
+for img_id in img_id_list:
+    image_file_name = coco.loadImgs(img_id)[0]['file_name']
     print(image_file_name)
     img = Image.open(os.path.join(IMAGE_PATH, image_file_name)).convert('RGB')
     img = ImageOps.exif_transpose(img)
     img = v2.functional.resize(img, size=IMAGE_RES)
 
-    mask_folder = os.path.join(MASK_PATH, image_file_name[:-4])
-    mask_list = os.listdir(mask_folder)
+    ann_id_list = coco.getAnnIds(imgIds=[img_id])
+    ann_list = coco.loadAnns(ann_id_list)
+
+
     masks = []
     labels = []
-    for mask_filename in sorted(mask_list):
-        mask = torchvision.transforms.functional.pil_to_tensor(
-            Image.open(os.path.join(mask_folder, mask_filename))
-            )
-        mask = v2.functional.resize(mask, size=IMAGE_RES)
+    for annotation in ann_list:
+        mask = torch.from_numpy(uncompressed_rle_to_mask(annotation))
+        mask = v2.functional.resize(mask.unsqueeze(0), size=IMAGE_RES)
+
         masks.append(mask)
-        if 'hold' in mask_filename:
-            labels.append(0)
-        if 'volume' in mask_filename:
-            labels.append(1)
-        if 'wall' in mask_filename:
-            labels.append(2)
+        labels.append(annotation['category_id'] - 1)
 
     masks = torch.squeeze(torch.stack(masks))
     patches, targets = split(img, masks, labels)
