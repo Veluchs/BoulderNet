@@ -19,8 +19,8 @@ def get_model_instance_segmentation(num_classes):
     # map could potentially have different sizes and
     # aspect ratios
     anchor_generator = AnchorGenerator(
-        sizes=((32, 64, 128, 256, 512),),
-        aspect_ratios=((0.5, 1.0, 2.0),)
+        sizes=((16, 32, 64, 128, 230)),
+        aspect_ratios=((0.5, 1.0, 2.0, 3.0))
     )
 
     # let's define what are the feature maps that we will
@@ -65,7 +65,13 @@ def get_model_instance_segmentation_resnet(num_classes):
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     # replace the pre-trained head with a new one
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
-
+    #change anchor box sizes
+    # anchor_generator = AnchorGenerator(
+    #     sizes=(4, 16, 32, 64, 128),
+    #     aspect_ratios=(0.5, 1.0, 2.0)
+    # )
+    # model.rpn.anchor_generator = anchor_generator
+    
     # now get the number of input features for the mask classifier
     in_features_mask = model.roi_heads.mask_predictor.conv5_mask.in_channels
     hidden_layer = 256
