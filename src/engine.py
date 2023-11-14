@@ -36,5 +36,5 @@ def evaluate(model, dataloader, device):
             
         metric.update(predictions, targets)
 
-        result = metric.compute()
-        return result
+    result = metric.compute()
+    return result
