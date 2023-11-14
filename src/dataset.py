@@ -59,9 +59,19 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         masks = masks[labels!=2]
         area = area[labels!=2]
         labels = labels[labels!=2]
+        
+        # make volumes to be holds
+        
+        for index, label in enumerate(labels):
+            if label == 1:
+                labels[index] = 0
+                
+        # move labels one up to conform with maskrcnn
+        
+        for index, label in enumerate(labels):
+            labels[index] += 1
 
-
-
+        # transform everything to tv_tensor
         target['boxes'] = tv_tensors.BoundingBoxes(
                             boxes,
                             format=tv_tensors.BoundingBoxFormat.XYXY,
