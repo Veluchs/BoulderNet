@@ -5,8 +5,11 @@ from torchvision.ops import MultiScaleRoIAlign
 
 
 
-def get_model_instance_segmentation(num_classes):
-    # load an instance segmentation model pre-trained on COCO
+def get_model_instance_segmentation_mobilenet(num_classes):
+    '''
+    Initializes a MaskRCNN Model with a mobilenet backbone.
+    '''
+    # load mobilenet backbone
     backbone = mobilenet_v3_large(weights="DEFAULT").features
     # ``FasterRCNN`` needs to know the number of
     # output channels in a backbone. For mobilenet_v2, it's 1280
@@ -40,8 +43,9 @@ def get_model_instance_segmentation(num_classes):
     # put the pieces together inside a Faster-RCNN model
 
     mask_roi_pooler = MultiScaleRoIAlign(featmap_names=['0'],
-                                                                output_size=14,
-                                                                sampling_ratio=2)
+                                         output_size=14,
+                                         sampling_ratio=2,
+                                        )
 
     model = MaskRCNN(backbone,
                             num_classes=num_classes,
@@ -58,14 +62,19 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 
 def get_model_instance_segmentation_resnet(num_classes):
-    # load an instance segmentation model pre-trained on COCO
+    '''
+    Initializes a MaskRCNN Model with a resnet backbone.
+    '''
+    # load pretrained resnet backbone
     model = torchvision.models.detection.maskrcnn_resnet50_fpn(weights="DEFAULT")
 
     # get number of input features for the classifier
     in_features = model.roi_heads.box_predictor.cls_score.in_features
     # replace the pre-trained head with a new one
     model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)
-    #change anchor box sizes
+    
+    # potentially change anchor box sizes
+    
     # anchor_generator = AnchorGenerator(
     #     sizes=(4, 16, 32, 64, 128),
     #     aspect_ratios=(0.5, 1.0, 2.0)
