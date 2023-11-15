@@ -19,25 +19,29 @@ def warmup_lr_scheduler(optimizer, warmup_iters, warmup_factor):
 
 # --------------MY UTILS___________
 
+import matplotlib.pyplot as plt
+from torchvision.transforms import functional as F
+from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
 
-def show(sample, bbox = True, seg_mask = False):
-    import matplotlib.pyplot as plt
-    
-    from torchvision.transforms import functional as F
-    from torchvision.utils import draw_bounding_boxes, draw_segmentation_masks
+
+def show(sample, bbox = False, seg_mask = False):
 
     image, target = sample
         
     image = F.convert_image_dtype(image, torch.uint8)
     labels = target['labels'].tolist()
     class_to_color = {
-        0: 'green',
-        1: 'violet',
-        2: 'yellow'
+        1: 'green',
+        2: 'violet',
+        3: 'yellow'
     }
     colors = [class_to_color[key] for key in labels]
-    masks = target['masks']
-    masks = masks.to(torch.bool)
+    
+    if 'scores' in target:
+        target['boxes'] = target['boxes'][target['scores']>0.5]
+        target['masks'] = torch.squeeze(target['masks'])[target['scores']>0.5]
+    
+    
     if bbox == True:
         annotated_image = draw_bounding_boxes(
             image,
@@ -45,18 +49,22 @@ def show(sample, bbox = True, seg_mask = False):
             colors=colors,
             width=3,
         )
+    if bbox == False:
+        annotated_image = image
     if seg_mask == True: 
 
-
-        ordered_labels, ordered_masks = list(zip(*sorted(zip(labels, masks), key= lambda x: x[0], reverse=True)))
+        ordered_labels, ordered_masks = list(zip(*sorted(zip(labels, target['masks']), key= lambda x: x[0], reverse=True)))
         colors = [class_to_color[key] for key in ordered_labels]
-
         ordered_masks = torch.stack(list(ordered_masks), dim=0)
+        
+        threshold = 0.5
+        mask_thresh = torch.where(ordered_masks > threshold, True, False)
+        
         annotated_image = draw_segmentation_masks(
-            image,
-            masks=ordered_masks,
+            annotated_image,
+            masks=mask_thresh,
             colors=colors,
-            # alpha=0.1
+            alpha=0.5
         )
 
     
