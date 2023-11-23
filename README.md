@@ -40,6 +40,8 @@ So far the predictions are still prone to errors:
 
 ## Dataset
 
+<img src="https://github.com/Veluchs/BoulderNet/assets/135350576/2135880d-04b6-44f0-b274-82ceb75bf864" width=400>
+
 The dataset consist of annotated (segmentation masks) images of indoor boulder walls in the COCO format. It consists of the following categories:
 
 - hold: All climbing holds. 
@@ -56,7 +58,7 @@ The dataset consist of annotated (segmentation masks) images of indoor boulder w
 | 17  | 2966 | 80  |
 
 
-There is still ongoing work to include more images. The goal is to have roughly 5000 annotated holds.
+There is still ongoing work to include more images. The goal is to have at least 5000 annotated holds.
 
 The plan is to publish the dataset once it is deemed extensive enough.
 
