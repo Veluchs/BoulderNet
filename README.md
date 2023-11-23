@@ -28,6 +28,6 @@ So far the MaskRCNN model has been trained with a ResNet backbone. The goal is t
 
 ## TODO
 
-[] Clean up datapipeline and image preprocessing
-[] Add seperate training script for mobilenet backbone
-[] More data :)
+- [] Clean up datapipeline and image preprocessing
+- [] Add seperate training script for mobilenet backbone
+- [] More data :)
