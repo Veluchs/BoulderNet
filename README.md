@@ -5,7 +5,7 @@ The model returns instance masks of climbing holds.
 
 So far the predictions are still prone to errors:
 
-
+![ann1](https://github.com/Veluchs/BoulderNet/assets/135350576/90f6384b-f083-44be-9348-1ef9321b7500) ![pred1](https://github.com/Veluchs/BoulderNet/assets/135350576/db972464-001b-4ffd-92da-582958ac64b4)
 
 
 ## Dataset
