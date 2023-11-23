@@ -1,3 +1,5 @@
-# BoulderNet
+# BoulderNet - A MaskRCNN to detect and segment climbing holds
 
-A Machine Learning Model to detect Climbing Holds and Volumes. Trained on a custom Dataset containing Fotos of different Climbing Walls in different gyms.
+Python script used to finetune a pretrained MaskRCNN netowork with different backbones. Trained on a custom Dataset containing Fotos of different Climbing Walls in different gyms.
+
+So far the 
