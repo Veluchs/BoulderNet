@@ -39,10 +39,12 @@ So far the predictions are still prone to errors:
 
 
 ## Dataset
-
+<p align='center'>
 <img src="https://github.com/Veluchs/BoulderNet/assets/135350576/2135880d-04b6-44f0-b274-82ceb75bf864" width=400>
+</p>
 
 The dataset consist of annotated (segmentation masks) images of indoor boulder walls in the COCO format. It consists of the following categories:
+
 
 - hold: All climbing holds. 
 - *volume: All box shaped volumes. These are used to create different shapes on the wall. They typically have bolt holes to allow for additional holds to be mounted on them.
@@ -58,16 +60,51 @@ The dataset consist of annotated (segmentation masks) images of indoor boulder w
 | 17  | 2966 | 80  |
 
 
-There is still ongoing work to include more images. The goal is to have at least 5000 annotated holds.
+There is still ongoing work to include more images. The goal is to have at least 5000 annotated holds and at least a few hundred volumes.
+However, there will always be an imbalance between the number of holds and volumes in the dataset, since climbing walls typically feature way less volumes than holds. 
+Once the dataset is deemed extensive enough it will be published.
 
-The plan is to publish the dataset once it is deemed extensive enough.
 
 ## Model
 
 So far the MaskRCNN model has been trained with a ResNet backbone. The goal is to evaluate the performance when using a MobileNet backbone.
 
+## Project Structure
+```
+├── README.md              <- The top-level README.
+├── data
+│   ├── processed          <- The final, canonical data sets for modeling.
+│   └── raw                <- The original, immutable data dump.
+│
+├── models                 <- Trained and serialized models.
+│
+├── notebooks              <- Jupyter notebooks. Saved to .py files using 
+│                             jupytext to allow for better version control.
+│
+├── src                    <- Source code for use in this project.
+│   ├── __init__.py    
+│   │
+│   ├── create_dataset.py  <- Splits the annotated pictures into smaller patches.
+│   │ 
+│   ├── dataset.py         <- Contains the custom dataset class.
+│   │
+│   ├── model.py           <- Contains the custom Pytorch codel classes
+│   │   
+│   ├── engine.py          <- Contains functions for training and evaluation.
+│   │
+│   └── utils.py           <- Scripts to create exploratory and results oriented visualizations.
+│     
+│
+└── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+                          generated with `pip freeze > requirements.txt`
+```
+
+Disclaimer: The project is still in active development. So far the training is handled in notebooks/2.0-model.py and there is some experimentation going on in the other notebooks.
+
+
 ## TODO
 
 - [ ] Clean up datapipeline and image preprocessing
-- [ ] Add seperate training script for mobilenet backbone
+- [ ] Move training scripts to .py
+- [ ] Add seperate training scripts for mobilenet backbone
 - [ ] More data :)
