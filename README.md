@@ -1,4 +1,4 @@
-# BoulderNet - A MaskRCNN to detect and segment climbing holds
+# BoulderNet - A Mask R-CNN to detect and segment climbing holds
 
 Python script used to finetune a pretrained MaskRCNN netowork with different backbones. Trained on a custom Dataset containing Fotos of different Climbing Walls in different gyms.
 The model returns instance masks of climbing holds.
