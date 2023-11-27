@@ -50,7 +50,11 @@ The dataset consist of annotated (segmentation masks) images of indoor boulder w
 - *volume: All box shaped volumes. These are used to create different shapes on the wall. They typically have bolt holes to allow for additional holds to be mounted on them.
 - *wall: The climbing wall on top of which all holds and volumes are mounted.
 
-* Currently not used in training the model.
+
+
+
+ 
+ \* Currently not used in training the model.
 
 
 ### Dataset Makeup
