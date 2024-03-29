@@ -3,31 +3,29 @@
 #   jupytext:
 #     cell_metadata_filter: -all
 #     custom_cell_magics: kql
-#     formats: ipynb,py
+#     formats: ipynb,py:percent
 #     text_representation:
 #       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.15.2
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
 
-# +
+# %%
 from torchvision import tv_tensors
 import sys
 
-sys.path.insert(1, '../src/')
+sys.path.append('/home/mysterioso/projects/BoulderNet/src')
 from torchvision import tv_tensors
-from dataset import ClimbingHoldDataset
 from model import get_model_instance_segmentation_resnet
-from model import get_model_instance_segmentation
 import torch
 from torchvision.models import MobileNet_V3_Large_Weights
 
-# +
+# %%
 import torch
 from torch.utils.tensorboard import SummaryWriter
 writer = SummaryWriter()
@@ -53,7 +51,7 @@ def train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq):
     return epoch_loss
 
 
-# +
+# %%
 import torchvision.transforms.v2 as T
 
 def get_transform(train):
@@ -80,15 +78,14 @@ mean=torch.tensor([0.485, 0.456, 0.406])
 std=torch.tensor([0.229, 0.224, 0.225])
 unnormalize = T.Normalize((-mean / std).tolist(), (1.0 / std).tolist())
 
-# +
+# %%
 import sys
 sys.path.insert(1, '../src/')
 import torch
-from model import get_model_instance_segmentation
 import utils
 from engine import evaluate
 from dataset import ClimbingHoldDataset
-
+from torchvision.datasets import CocoDetection
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -110,14 +107,14 @@ model = get_model_instance_segmentation_resnet(2)
 
 model.to(device)
 # use our dataset and defined transformations
-dataset = ClimbingHoldDataset('../data/processed', get_transform(train=True))
-dataset_test = ClimbingHoldDataset('../data/processed', get_transform(train=False))
+dataset = ClimbingHoldDataset("../data/processed/images/", annFile="../data/processed/annotations/instances.json", transforms=get_transform(train=True))
+dataset_test = ClimbingHoldDataset("../data/processed/images/", annFile="../data/processed/annotations/instances.json", transforms=get_transform(train=False))
 
 
 
 indices = torch.randperm(len(dataset)).tolist()
-dataset = torch.utils.data.Subset(dataset, indices[:20])
-dataset_test = torch.utils.data.Subset(dataset_test, indices[-20:])
+dataset = torch.utils.data.Subset(dataset, indices[:1])
+dataset_test = torch.utils.data.Subset(dataset_test, indices[-1:])
 
 # define training and validation data loaders
 data_loader = torch.utils.data.DataLoader(
@@ -149,9 +146,10 @@ lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                gamma=0.8)
 
 # let's train it for 10 epochs
-num_epochs = 10000
+num_epochs = 1
 
 for epoch in range(num_epochs):
+    print('test')
     # train for one epoch, printing every 10 iterations
     loss = train_one_epoch(model, optimizer, data_loader, device, epoch, print_freq=1)
     # update the learning rate
@@ -170,7 +168,7 @@ for epoch in range(num_epochs):
 
 torch.save(model.state_dict(), 'model.pt')
 
-# +
+# %%
 from torchvision.transforms import v2
 import sys
 sys.path.insert(1, '../src/')
@@ -184,12 +182,12 @@ dataset = ClimbingHoldDataset('../data/processed', transforms=get_transform(Fals
 img, target = dataset.__getitem__(90)
 
 
-# +
+# %%
 # img, target = transforms(img, target)
 
 show_a([unnormalize(v2.functional.to_dtype(img, torch.float, scale=True)), target], seg_mask=True, bbox=True)
 
-# +
+# %%
 model.to('cuda')
 model.eval()
 pred = model([img.to('cuda')])
@@ -197,17 +195,14 @@ pred[0]['masks'] = torch.squeeze(pred[0]['masks'])
 from utils import show
 
 show_a([unnormalize(img.to('cpu')), pred[0]], seg_mask=True, bbox=True)
-# -
+# %%
 
 
-
+# %%
 torch.save(model.state_dict(), 'model.pt')
 
+# %%
 model = get_model_instance_segmentation_resnet(2)
 model.load_state_dict(torch.load('model.pt'))
 model.to('cuda')
 model.eval()
-
-datapoint = torch.load('/notebooks/data/processed/20230827_151815-0.pt')
-
-datapoint.keys()
