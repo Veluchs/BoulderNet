@@ -79,7 +79,7 @@ def save_to_coco(images, targets) -> dict:
     anno_id = 1
     for i, img in enumerate(images):
         print(f"Saving Image {i+1} / {len(images)}")
-        write_jpeg(img, f"{SAVE_PATH}/img_{i}.jpeg")
+        write_jpeg(img, f"{SAVE_PATH}/images/img_{i}.jpeg")
         img_coco = {
             "id": i,  # Use the same identifier as the annotation
             "width": img.shape[1],  # Set the width of the image
@@ -125,21 +125,27 @@ def save_to_coco(images, targets) -> dict:
         ],  # Add a list of categories for the objects in the dataset
     }
 
-    with open(SAVE_PATH + "/test.json", "w") as f:
+    with open(SAVE_PATH + "/annotations/instances.json", "x") as f:
         json.dump(a, f, indent=2)
 
 
 if __name__ == "__main__":
-
     IMAGE_RES = 768
-    IMAGE_PATH = '../data/test'
-    ANNOTATION_PATH = '../data/test/instances.json'
+    IMAGE_PATH = '../data/raw/images'
+    ANNOTATION_PATH = '../data/raw/annotations/instances.json'
     SAVE_PATH = '../data/processed'
 
     coco = COCO(ANNOTATION_PATH)
 
     img_id_list = coco.getImgIds()
-    for img_id in img_id_list:
+
+    full_patch_list = []
+    full_annotation_list = []
+
+    print("Splitting Images...")
+
+    for j, img_id in enumerate(img_id_list):
+        print(f"Image {j+1} / {len(img_id_list)}")
         image_file_name = coco.loadImgs(img_id)[0]['file_name']
         img = Image.open(os.path.join(IMAGE_PATH, image_file_name)).convert('RGB')
         img = ImageOps.exif_transpose(img)
@@ -158,10 +164,14 @@ if __name__ == "__main__":
             labels.append(annotation['category_id'] - 1)
 
         masks = torch.squeeze(torch.stack(masks))
-        print("Splitting Images...")
         patches, targets = split(img, masks, labels)
 
-        print("Images split into patches!")
-        print("Saving to COCO...")
+        full_patch_list.append(patches)
+        full_annotation_list += targets
 
-        save_to_coco(patches, targets)
+    print("Images split into patches!")
+    print("Saving to COCO...")
+    save_to_coco(
+        torch.cat(full_patch_list, dim=0),
+        full_annotation_list
+        )
