@@ -84,7 +84,7 @@ def save_to_coco(images, targets) -> dict:
             "id": i,  # Use the same identifier as the annotation
             "width": img.shape[1],  # Set the width of the image
             "height": img.shape[2],  # Set the height of the image
-            "file_name": f"img_{i}",  # Set the file name of the image
+            "file_name": f"img_{i}.jpeg",  # Set the file name of the image
             "license": 1,  # Set the license for the image (optional)
             }
         images_coco.append(img_coco)
@@ -97,7 +97,7 @@ def save_to_coco(images, targets) -> dict:
                 "id": anno_id,  # Use a unique identifier for the annotation
                 "image_id": i,  # Use the same identifier for the image
                 "category_id": category.item(),  # Assign a category ID to the object
-                "segmentaion": rle_mask,
+                "segmentation": rle_mask,
                 "bbox": coco_mask.toBbox(rle_mask).tolist(),  # Specify the bounding box in the format [x, y, width, height]
                 "area": coco_mask.area(rle_mask).tolist(),  # Calculate the area of the bounding box
                 "iscrowd": 0,  # Set iscrowd to 0 to indicate that the object is not part of a crowd
