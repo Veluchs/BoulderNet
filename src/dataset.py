@@ -1,73 +1,73 @@
 import os
 import torch
-from PIL import Image, ImageDraw, ImageOps
-import numpy as np
-import torchvision.transforms as T
-from torchvision.transforms import v2
 from torchvision import tv_tensors
-import torchvision
+from torchvision. transforms.functional import pil_to_tensor
+from PIL import Image
+from pycocotools import mask as coco_mask
 
 
 class ClimbingHoldDataset(torch.utils.data.Dataset):
 
-    def __init__(self, root_dir, transforms):
-        self.root_dir = root_dir
-        # load image files, and labels
-        self.data = list(sorted(
-            os.listdir(root_dir)
-            ))
+    def __init__(self, root, annFile, transforms):
+        from pycocotools.coco import COCO
 
+        self.coco = COCO(annFile)
+        self.ids = list(sorted(self.coco.imgs.keys()))
+        self.root = root
         self.transforms = transforms
 
+    def _load_image(self, id: int):
+        path = self.coco.loadImgs(id)[0]["file_name"]
+        img = Image.open(os.path.join(self.root, path)).convert("RGB")
+        return pil_to_tensor(img)
+
+    def _load_target(self, id: int):
+        return self.coco.loadAnns(self.coco.getAnnIds(id))
+
     def __len__(self):
-        return len(self.data)
+        return len(self.ids)
 
     def __getitem__(self, idx):
         '''make sure images are in the appropiate size already'''
+        id = self.ids[idx]
+        image = self._load_image(id)
+        targets = self._load_target(id)
 
-        # load image and mask
-        data_path = os.path.join(self.root_dir, self.data[idx])
-
-        datapoint = torch.load(data_path)
-
-        labels = datapoint['labels']
-        masks = datapoint['masks']
-        # split image and masks in 12 patches parts
-
-        target = {}
+        masks = []
+        labels = []
         boxes = []
-        for mask in masks:
-            boxes.append(self.get_bounding_box(mask))
-        boxes = torch.stack(boxes)
-
-        area = (
-            (boxes[:, 3] - boxes[:, 1]) *
-            (boxes[:, 2] - boxes[:, 0])
-            ).detach().clone()
-        
+        area = []
+        target = {}
+        for annotation in targets:
+            mask = torch.from_numpy(coco_mask.decode(annotation['segmentation']))
+            masks.append(mask)
+            labels.append(annotation['category_id'])
+            boxes.append(annotation['bbox'])
+            area.append(annotation['area'])
 
         # remove empty bounding boxes
+        masks = torch.stack(masks)
+        area = torch.tensor(area)
+        boxes = torch.tensor(boxes)
+        labels = torch.tensor(labels)
 
-        boxes = boxes[area!=0]
-        labels = labels[area!=0]
-        masks = masks[area!=0]
-        area = area[area!=0]
-        
-        #remove labels == 2 (boulderwall)
-        
-        boxes = boxes[labels!=2]
-        masks = masks[labels!=2]
-        area = area[labels!=2]
-        labels = labels[labels!=2]
-        
+        boxes = boxes[area != 0]
+        labels = labels[area != 0]
+        masks = masks[area != 0]
+        area = area[area != 0]
+
+        # remove labels == 2 (boulderwall)
+        boxes = boxes[labels != 2]
+        masks = masks[labels != 2]
+        area = area[labels != 2]
+        labels = labels[labels != 2]
+
         # make volumes to be holds
-        
         for index, label in enumerate(labels):
             if label == 1:
                 labels[index] = 0
-                
+
         # move labels one up to conform with maskrcnn
-        
         for index, label in enumerate(labels):
             labels[index] += 1
 
@@ -87,52 +87,7 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
         target['iscrowd'] = iscrowd
         target['labels'] = labels
 
-        image = datapoint['image'].float()
-
         if self.transforms is not None:
             image, target = self.transforms(image, target)
 
         return image, target
-
-    
-
-    def get_bounding_box(self, mask):
-        """This function computes the bounding box of a given mask"""
-
-        nonzero_indices = torch.nonzero(mask, as_tuple=True)
-
-        xmin = torch.min(nonzero_indices[1])
-        xmax = torch.max(nonzero_indices[1])
-        ymin = torch.min(nonzero_indices[0])
-        ymax = torch.max(nonzero_indices[0])
-
-        return torch.tensor((xmin, ymin, xmax, ymax))
-
-    # def labels_to_masks(self, label_path, image) -> np.array:
-    #     """This function computes masks from given polygon labels."""
-
-    #     label = open(label_path)
-    #     lines = label.readlines()
-    #     width, height = image.size
-
-    #     masks = []
-    #     class_labels = []
-
-    #     for line in lines:
-    #         class_label = int(line[0])  # TODO what about multiple digits
-    #         polygon = np.fromstring(line[2:], sep=' ')
-    #         polygon_coordinates = [
-    #             (int(polygon[2*i] * width), int(polygon[2*i + 1] * height))
-    #             for i in range(int(len(polygon)/2))
-    #             ]
-    #         # create empty image with size of image
-    #         mask = Image.new('L', (width, height), 0)
-    #         # draw mask on image
-    #         ImageDraw.Draw(mask).polygon(polygon_coordinates,
-    #                                      outline=1,
-    #                                      fill=1
-    #                                      )
-    #         masks.append(np.array(mask))
-    #         class_labels.append(class_label)
-
-    #     return masks, class_labels
