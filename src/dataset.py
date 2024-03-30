@@ -42,7 +42,10 @@ class ClimbingHoldDataset(torch.utils.data.Dataset):
             mask = torch.from_numpy(coco_mask.decode(annotation['segmentation']))
             masks.append(mask)
             labels.append(annotation['category_id'])
-            boxes.append(annotation['bbox'])
+            # bboxesfrom [x, y, w, h] to [x0, y0, x1, y1]
+            bbox = annotation['bbox']
+            bbox = [bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]]
+            boxes.append(bbox)
             area.append(annotation['area'])
 
         # remove empty bounding boxes
